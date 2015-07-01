@@ -9,11 +9,6 @@ import ConfigParser
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-#DB_HOST = '''42.121.144.167'''
-#DB_NAME = '''tingshuo'''
-#DB_USER = '''shike'''
-#DB_PASSWD = '''123456'''
- 
 config = ConfigParser.ConfigParser()
 config.readfp(open(raw_input("input config file name:"), "rb"))
 DB_HOST = config.get("global", "db_host")
