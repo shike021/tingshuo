@@ -9,12 +9,19 @@ import ConfigParser
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-config = ConfigParser.ConfigParser()
-config.readfp(open(raw_input("input config file name:"), "rb"))
-DB_HOST = config.get("global", "db_host")
-DB_NAME = config.get("global", "db_name")
-DB_USER = config.get("global", "db_user")
-DB_PASSWD = config.get("global", "db_pass")
+#"""
+#config = ConfigParser.ConfigParser()
+#config.readfp(open(raw_input("input config file name:"), "rb"))
+#DB_HOST = config.get("global", "db_host")
+#DB_NAME = config.get("global", "db_name")
+#DB_USER = config.get("global", "db_user")
+#DB_PASSWD = config.get("global", "db_pass")
+#"""
+
+DB_HOST = "42.121.144.167";
+DB_NAME = "tingshuo";
+DB_USER = "shike";
+DB_PASSWD = "123456";
 
 def testjson():
 	result = {}
@@ -134,7 +141,7 @@ def get_user_info(acc):
 		conn = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
 		cur = conn.cursor()
-		sql = "select nickname, avatar, gold, ''like'' from member where account=\"" + acc + "\"";
+		sql = "select nickname, avatar, gold, totallike from member where account=\"" + acc + "\"";
 		print sql, acc;
 		print "\n";
 		result = cur.execute(sql);
@@ -143,12 +150,12 @@ def get_user_info(acc):
 		avt = "";
 		gld = 0;
 		lik = 0;
-		for nickname , avatar, gold , like in cur.fetchall():
-			print nickname, avatar, gold, like;
+		for nickname , avatar, gold , totallike in cur.fetchall():
+			print nickname, avatar, gold, totallike;
 			nik = nickname;
 			avt = avatar;
 			gld = gold;
-			lik = like;
+			lik = totallike;
 		conn.commit();
 		cur.close();
 		conn.close();

@@ -12,7 +12,7 @@ CREATE TABLE `member` (
   `age` smallint(3) unsigned NOT NULL DEFAULT '18' COMMENT '年龄',
   `password` varchar(64) NOT NULL DEFAULT '' COMMENT 'md5(密码)',
   `avatar` varchar(256) NOT NULL DEFAULT '',
-  `like` int(11) unsigned NOT NULL DEFAULT '0',
+  `totallike` int(11) unsigned NOT NULL DEFAULT '0',
   `gold` int(11) NOT NULL DEFAULT '0',
   `readmsgno` int(10) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
