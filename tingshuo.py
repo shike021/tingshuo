@@ -113,7 +113,11 @@ def add_gold(uid, num):
 		conn = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
 		cur = conn.cursor()
-		sql = "update member set gold = gold+"+num+" where id="+uid;
+		u=uid
+		n=num
+		sqll = "update member set gold = gold+" + str(n) + " where id=" + str(u);
+		#print sqll;
+		cur.execute(sqll);
 		conn.commit();
 		cur.close();
 		conn.close();
@@ -128,6 +132,7 @@ def del_gold(uid, num):
 		conn.select_db('tingshuo')
 		cur = conn.cursor()
 		sql = "update member set gold = gold-"+num+" where id="+uid;
+		cur.execute(sql);
 		conn.commit();
 		cur.close();
 		conn.close();
@@ -432,9 +437,11 @@ class MainHandler(tornado.web.RequestHandler):
 		elif t=="addgold":
 			acc = self.get_argument('acc');
                 	pas = self.get_argument('psw')
+			num = self.get_argument('num');
 			r = valid_user(acc, pas)
 			if r == 1:
-				sr = add_gold(acc);
+				uid = get_user_id(acc)
+				sr = add_gold(uid, num);
 				if sr==1:
 					self.write("add gold ok");
 				else:
