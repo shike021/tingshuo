@@ -6,6 +6,10 @@ import hashlib
 import json
 import sys
 import ConfigParser
+import threading
+import time
+import signal
+from time import ctime,sleep
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
@@ -52,7 +56,7 @@ def get_user_id(acc):
 		return uid;
 	except MySQLdb.Error, e:
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
-		return "";
+		return 0;
 
 def get_user_acc(uid):
 	try:
@@ -98,7 +102,7 @@ def add_like(msgid):
 		cur = conn.cursor()
 		sql1 = "update message set likecnt = likecnt + 1 where id="+msgid;
 		cur.execute(sql1);
-		sql2 = "update member  set gold = gold + 2 , totallike = totallike +1 where id = (select uid from message where id=" +msgid + ")";
+		sql2 = "update member  set gold = gold + 2 , totallike = totallike +1 , todaylike = todaylike +1 where id = (select uid from message where id=" +msgid + ")";
 		cur.execute(sql2);
 		conn.commit();
 		cur.close();
@@ -462,16 +466,95 @@ class MainHandler(tornado.web.RequestHandler):
 					self.write("del gold failed");
 			else:
 				self.write('recv msg err');
+		elif t=="daylike":
+			acc = self.get_argument('acc');
+                	pas = self.get_argument('psw')
+			r = valid_user(acc, pas)
+			if r == 1:
+				u = get_user_id(acc);
+				if u != 0:
+					tlike = 0;
+					ylike = 0;
+					tlike, ylike = get_day_like(u);
+
+					likes = {};
+					likes["todaylike"] = tlike;
+					likes["yesterdaylike"] = ylike;
+					self.write(json.dumps(likes));
+					
+				else:
+					self.write('invalid user. can not request this info');
+			
+
+			else:
+				self.write('recv msg err');
+
                 else:
                 	self.write("invalid op type")
 
+def get_day_like(uid):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select todaylike, yesterdaylike from member where id=%u" % (uid)
+		print sqlstr
+		result = cur.execute(sqlstr);
+		tl = 0;
+		yl = 0;
+		for todaylike, yesterdaylike in cur.fetchall():
+			tl = todaylike;
+			yl = yesterdaylike;
+		conn.commit();
+		cur.close();
+		conn.close();
+		return (tl, yl);
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0, 0;
+
+
+def now():
+	return str( time.strftime( '%Y-%m-%d %H:%M:%S' , time.localtime() ) )
 
 
 application = tornado.web.Application([ 
     (r"/", MainHandler),
 ])  
 
+def mainprocess():
+	print "thread mainprocess start..."
+	application.listen(80)
+	tornado.ioloop.IOLoop.instance().start();
+
+def timetick():
+	print "thread timetick start..."
+	sleep(1);
+	
+	
+
+def main():
+	print 'tingshuo server starting at:', now();
+	threadpool = []
+	t1 = threading.Thread(target=mainprocess);
+	threadpool.append(t1);
+	t2 = threading.Thread(target=timetick);
+	threadpool.append(t2);
+
+	t1.start();
+	t2.start();
+
+	threading.Thread.join(t1);
+	threading.Thread.join(t2);
+	print 'tingshuo server shutdown at:', now();
+
+def handler(signum, frame):
+	global is_exit
+     	is_exit = True
+     	print "receive a signal %d, is_exit = %d"%(signum, is_exit)
+
 if __name__ == "__main__":
-    application.listen(80)
-    tornado.ioloop.IOLoop.instance().start();
+	signal.signal(signal.SIGINT, handler);
+	signal.signal(signal.SIGTERM, handler);
+	main();
 

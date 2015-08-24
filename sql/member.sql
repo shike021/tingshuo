@@ -18,3 +18,7 @@ CREATE TABLE `member` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `key_account` (`account`) USING BTREE
 ) ENGINE=MyISAM AUTO_INCREMENT=1531 DEFAULT CHARSET=utf8;
+
+#2015-08-24
+alter table member add column `todaylike` int(10) unsigned not null default 0;
+alter table member add column `yesterdaylike` int(10) unsigned not null default 0;
