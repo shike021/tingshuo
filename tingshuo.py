@@ -327,12 +327,32 @@ def get_unread_msg(acc, msgs, curpage, pagesize):
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
 		return 0;
 	
-		info = {};
-		info["acc"] = acc;
-		info["nik"] = nik;
-		info["avt"] = avt;
-		info["gold"] = gld;
-		all = {};
+def get_my_msg(uid, msgs, curpages, pagesize):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select id,unix_timestamp(createtime) as time, likecnt, uid, msg from message where uid=%s order by id DESC limit %s,%s" % (uid, curpages, pagesize)
+		print sqlstr
+		result = cur.execute(sqlstr);
+		for id, time, likecnt, uid, msg in cur.fetchall():
+			one = {};
+			one["id"]	= id;
+			one["msg"]	= msg;
+			one["t"]	= time;
+			one["uid"]	= uid;
+			one["like"]	= likecnt;
+			jsonstr = json.dumps(one);
+			msgs.append(jsonstr);
+		print msgs;
+		conn.commit();
+		cur.close();
+		conn.close();
+		return 1;
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+	
 def getDBConn(dbname):
         conn=MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASSWD, port=3306,charset="utf8")
         return conn
@@ -488,7 +508,22 @@ class MainHandler(tornado.web.RequestHandler):
 
 			else:
 				self.write('recv msg err');
-
+		elif t=="postlist":
+			print "get post list..."
+                	acc = self.get_argument('acc')
+                	pas = self.get_argument('psw')
+			cup = self.get_argument('curpage')
+			pgs = self.get_argument('pagesize')
+			r = valid_user(acc, pas)
+			if r == 1:
+				u = get_user_id(acc);
+				if u != 0:
+					msgs = [];
+					get_my_msg(u, msgs, cup, pgs);
+					for msg in msgs:
+						self.write(msg);
+			else:
+				self.write('get post list err');
                 else:
                 	self.write("invalid op type")
 
