@@ -135,7 +135,7 @@ def del_gold(uid, num):
 		conn = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
 		cur = conn.cursor()
-		sql = "update member set gold = gold-"+num+" where id="+uid;
+		sql = "update member set gold = gold-" + str(num) + " where id=" + str(uid);
 		cur.execute(sql);
 		conn.commit();
 		cur.close();
@@ -352,6 +352,48 @@ def get_my_msg(uid, msgs, curpages, pagesize):
 	except MySQLdb.Error, e:
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
 		return 0;
+
+def dec_net_pkg(net, pkgtype):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "update netflowpkg set remainder=remainder-1 where net=%s and pkgtype=%s and remainder>0" % (net, pkgtype)
+		print sqlstr
+		cur.execute(sqlstr);
+		conn.commit();
+		cur.close();
+		conn.close();
+		return 1;
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
+
+def get_net_pkg_list():
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select net,pkgtype,remainder from netflowpkg";
+		print sqlstr
+		result = cur.execute(sqlstr);
+		list = {};
+		for net, pkgtype, remainder in cur.fetchall():
+			one = {};
+			one["net"]		= net;
+			one["pkgtype"]		= pkgtype;
+			one["remainder"]	= remainder;
+			list.append(one);
+		print msgs;
+		conn.commit();
+		cur.close();
+		conn.close();
+		return json.dumps(list);
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
 	
 def getDBConn(dbname):
         conn=MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASSWD, port=3306,charset="utf8")
@@ -437,7 +479,7 @@ class MainHandler(tornado.web.RequestHandler):
                 	#pas = self.get_argument('psw')
 			uid = self.get_argument('uid');
 			#r = valid_user(acc, pas)
-			r = 1;
+			r = 1
 			if r == 1:
 				acc = get_user_acc(uid);
 				info = get_user_info(acc);
@@ -479,7 +521,7 @@ class MainHandler(tornado.web.RequestHandler):
 			r = valid_user(acc, pas)
 			if r == 1:
 				uid = get_user_id(acc);
-				sr = del_gold(acc);
+				sr = del_gold(uid, num);
 				if sr==1:
 					self.write("del gold ok");
 				else:
@@ -524,6 +566,32 @@ class MainHandler(tornado.web.RequestHandler):
 						self.write(msg);
 			else:
 				self.write('get post list err');
+		elif t=="netpkg":
+			print "get netpkg"
+                	acc = self.get_argument('acc')
+                	pas = self.get_argument('psw')
+			sub = self.get_argument('subt');
+			if sub == "get":
+				list = get_net_pkg_list();
+				self.write(list);
+			
+			elif sub == "dec":
+				r = valid_user(acc, pas)
+				if r == 1:
+					u = get_user_id(acc);
+					if u != 0:
+						net = self.get_argument('net');
+						pkgtype = self.get_argument('pkgtype');
+						dec_net_pkg(net, pkgtype);
+						self.write('dec pkg ok');
+					else:
+						self.write('dec pkg  err');
+				else:
+					self.write('dec pkg  err');
+			else:
+				self.write("op error");
+
+
                 else:
                 	self.write("invalid op type")
 
