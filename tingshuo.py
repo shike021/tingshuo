@@ -378,14 +378,13 @@ def get_net_pkg_list():
 		sqlstr = "select net,pkgtype,remainder from netflowpkg";
 		print sqlstr
 		result = cur.execute(sqlstr);
-		list = {};
+		list = [];
 		for net, pkgtype, remainder in cur.fetchall():
 			one = {};
 			one["net"]		= net;
 			one["pkgtype"]		= pkgtype;
 			one["remainder"]	= remainder;
 			list.append(one);
-		print msgs;
 		conn.commit();
 		cur.close();
 		conn.close();
