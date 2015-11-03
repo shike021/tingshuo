@@ -8,6 +8,7 @@ import sys
 import ConfigParser
 import threading
 import time
+import datetime
 import signal
 from time import ctime,sleep
 reload(sys)
@@ -619,6 +620,24 @@ def get_day_like(uid):
 def now():
 	return str( time.strftime( '%Y-%m-%d %H:%M:%S' , time.localtime() ) )
 
+def exchange_like_num():
+	print "exchange today like num"
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "update member set yesterdaylike=todaylike, todaylike=0"
+		print sqlstr
+		cur.execute(sqlstr);
+		conn.commit();
+		cur.close();
+		conn.close();
+		return (tl, yl);
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0, 0;
+	
+
 
 application = tornado.web.Application([ 
     (r"/", MainHandler),
@@ -631,9 +650,14 @@ def mainprocess():
 
 def timetick():
 	print "thread timetick start..."
-	sleep(1);
-	
-	
+	sleep(5);
+	while (1):
+		sleep(5);
+		now = time.time();
+		now2 = now%86400;
+		if now%86400 >=50 and now%86400 < 59 :
+			exchange_like_num();
+			sleep(10);
 
 def main():
 	print 'tingshuo server starting at:', now();
