@@ -7,7 +7,7 @@ CREATE TABLE `message` (
   `uid` int(10) unsigned NOT NULL DEFAULT '0',
   `likecnt` int(10) unsigned NOT NULL DEFAULT '0',
   `msg` varchar(255) NOT NULL DEFAULT '',
-  `createtime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `createtime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=908 DEFAULT CHARSET=utf8;
 

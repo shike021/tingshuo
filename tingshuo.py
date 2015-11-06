@@ -632,10 +632,10 @@ def exchange_like_num():
 		conn.commit();
 		cur.close();
 		conn.close();
-		return (tl, yl);
+		return ;
 	except MySQLdb.Error, e:
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
-		return 0, 0;
+		return 0;
 	
 
 
@@ -651,13 +651,12 @@ def mainprocess():
 def timetick():
 	print "thread timetick start..."
 	sleep(5);
-	while (1):
-		sleep(5);
-		now = time.time();
-		now2 = now%86400;
-		if now%86400 >=50 and now%86400 < 59 :
+	while (1) :
+		sleep(2);
+		if time.localtime().tm_hour == 22 and time.localtime().tm_min >= 27 and time.localtime().tm_sec <= 59 :
+			print time.ctime();
 			exchange_like_num();
-			sleep(10);
+			sleep(59);
 
 def main():
 	print 'tingshuo server starting at:', now();
