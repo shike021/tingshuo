@@ -146,6 +146,21 @@ def del_gold(uid, num):
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
 		return "";
 
+def del_msg(uid, msgid):
+	try:
+		conn = getDBConn('''tingshuo''');
+		conn.select_db('tingshuo');
+		cur = conn.cursor()
+		sql = "delete from message where id=" + str(msgid) + " and uid=" + str(uid);
+		cur.execute(sql);
+		conn.commit();
+		cur.close();
+		conn.close();
+		return 1;
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
 def get_user_info(acc):
 	try:
 		conn = getDBConn('''tingshuo''')
@@ -528,6 +543,23 @@ class MainHandler(tornado.web.RequestHandler):
 					self.write("del gold failed");
 			else:
 				self.write('recv msg err');
+
+		elif t=="delmsg":
+			acc = self.get_argument('acc');
+                	pas = self.get_argument('psw')
+			msgid = self.get_argument('msg');
+			r = valid_user(acc, pas)
+			if r == 1:
+				uid = get_user_id(acc);
+				ret = del_msg(uid, msgid);
+				if ret == 1:
+					self.write("del msg ok");
+				else:
+					self.write("del msg failed");
+
+			else:
+				self.write('invalid acc');
+
 		elif t=="daylike":
 			acc = self.get_argument('acc');
                 	pas = self.get_argument('psw')
@@ -653,10 +685,10 @@ def timetick():
 	sleep(5);
 	while (1) :
 		sleep(2);
-		if time.localtime().tm_hour == 22 and time.localtime().tm_min >= 27 and time.localtime().tm_sec <= 59 :
+		if time.localtime().tm_hour == 22 and time.localtime().tm_min == 59 :
 			print time.ctime();
 			exchange_like_num();
-			sleep(59);
+			sleep(60);
 
 def main():
 	print 'tingshuo server starting at:', now();
