@@ -166,7 +166,7 @@ def get_user_info(acc):
 		conn = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
 		cur = conn.cursor()
-		sql = "select nickname, avatar, gold, totallike from member where account=\"" + acc + "\"";
+		sql = "select id, nickname, avatar, gold, totallike from member where account=\"" + acc + "\"";
 		print sql, acc;
 		print "\n";
 		result = cur.execute(sql);
@@ -175,8 +175,10 @@ def get_user_info(acc):
 		avt = "";
 		gld = 0;
 		lik = 0;
-		for nickname , avatar, gold , totallike in cur.fetchall():
-			print nickname, avatar, gold, totallike;
+		uid = 0;
+		for id, nickname , avatar, gold , totallike in cur.fetchall():
+			print id, nickname, avatar, gold, totallike;
+			uid = id;
 			nik = nickname;
 			avt = avatar;
 			gld = gold;
@@ -186,6 +188,7 @@ def get_user_info(acc):
 		conn.close();
 	
 		info = {};
+		info["uid"] = uid;
 		info["acc"] = acc;
 		info["nik"] = nik;
 		info["avt"] = avt;
@@ -623,9 +626,99 @@ class MainHandler(tornado.web.RequestHandler):
 			else:
 				self.write("op error");
 
+		elif t=="comment":
+                	acc = self.get_argument('acc')
+                	pas = self.get_argument('psw')
+			sub = self.get_argument('sub');
+			r = valid_user(acc, pas) 
+			if r == 1:
+				msgid = self.get_argument('msg');
+				#check msg valid
+				#validmsg = check_msg(msgid)
+				validmsg = 1
+				if validmsg == 1:
+					if sub == "get":
+						cmts = [];
+						get_all_comment(msgid, cmts);
+						for cmt in cmts:
+							self.write(cmt);
+					elif sub == "post":
+						cmt = self.get_argument('contents');
+						uid = get_user_id(acc);
+						res = save_msg_comment(msgid, uid, cmt.encode('utf8'))
+						if res == 1:
+							self.write("post comment ok");
+						else:
+							self.write("post comment failed");
+					elif sub == "cmtnum":
+						num = get_comment_num(msgid)
+						self.write(str(num));
+					else:
+						self.write("invalid sub operation");
+				else:
+					self.write("invalid msg id");
+			else:
+				self.write("invalid user");
+			
+
 
                 else:
                 	self.write("invalid op type")
+
+def get_all_comment(msgid, comments):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select msgid, sender, unix_timestamp(time) as tm, cmt from msgcomment where msgid=%s order by time desc " % (msgid)
+		print sqlstr
+
+		result = cur.execute(sqlstr);
+		for msgid, sender, sendto, tm, cmt in cur.fetchall():
+			jsonstr = json.dumps(one);
+			comments.append(cmt);
+		print comments;
+		conn.commit();
+		cur.close();
+		conn.close();
+		return 1;
+
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
+def save_msg_comment(msgid, senderid, cmt):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+        	value = [msgid, senderid,cmt]
+		result = cur.execute('insert into msgcomment(msgid, sender, cmt) values(%s,%s,%s)', value)
+		conn.commit();
+		cur.close();
+		conn.close();
+		return 1;
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
+def get_comment_num(msgid):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select count(1) as num from msgcomment where msgid=%s" % (msgid)
+		number = 0;
+		result = cur.execute(sqlstr);
+		for num in cur.fetchall():
+			number = num
+		conn.commit();
+		cur.close();
+		conn.close();
+		return number;
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
 
 def get_day_like(uid):
 	try:
