@@ -14,19 +14,12 @@ from time import ctime,sleep
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-#"""
-#config = ConfigParser.ConfigParser()
-#config.readfp(open(raw_input("input config file name:"), "rb"))
-#DB_HOST = config.get("global", "db_host")
-#DB_NAME = config.get("global", "db_name")
-#DB_USER = config.get("global", "db_user")
-#DB_PASSWD = config.get("global", "db_pass")
-#"""
-
-DB_HOST = "42.121.144.167";
-DB_NAME = "tingshuo";
-DB_USER = "shike";
-DB_PASSWD = "123456";
+config = ConfigParser.ConfigParser()
+config.readfp(open(raw_input("input config file name:"), "rb"))
+DB_HOST = config.get("global", "db_host")
+DB_NAME = config.get("global", "db_name")
+DB_USER = config.get("global", "db_user")
+DB_PASSWD = config.get("global", "db_pass")
 
 def testjson():
 	result = {}
@@ -674,8 +667,7 @@ def get_all_comment(msgid, comments):
 		print sqlstr
 
 		result = cur.execute(sqlstr);
-		for msgid, sender, sendto, tm, cmt in cur.fetchall():
-			jsonstr = json.dumps(one);
+		for msgid, sender, tm, cmt in cur.fetchall():
 			comments.append(cmt);
 		print comments;
 		conn.commit();
