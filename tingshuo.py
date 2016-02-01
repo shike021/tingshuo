@@ -14,12 +14,19 @@ from time import ctime,sleep
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-config = ConfigParser.ConfigParser()
-config.readfp(open(raw_input("input config file name:"), "rb"))
-DB_HOST = config.get("global", "db_host")
-DB_NAME = config.get("global", "db_name")
-DB_USER = config.get("global", "db_user")
-DB_PASSWD = config.get("global", "db_pass")
+#"""
+#config = ConfigParser.ConfigParser()
+#config.readfp(open(raw_input("input config file name:"), "rb"))
+#DB_HOST = config.get("global", "db_host")
+#DB_NAME = config.get("global", "db_name")
+#DB_USER = config.get("global", "db_user")
+#DB_PASSWD = config.get("global", "db_pass")
+#"""
+
+DB_HOST = "42.121.144.167";
+DB_NAME = "tingshuo";
+DB_USER = "shike";
+DB_PASSWD = "123456";
 
 def testjson():
 	result = {}
@@ -129,12 +136,15 @@ def del_gold(uid, num):
 		conn = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
 		cur = conn.cursor()
-		sql = "update member set gold = gold-" + str(num) + " where id=" + str(uid);
-		cur.execute(sql);
+		sql = "update member set gold = gold-" + str(num) + " where id=" + str(uid) + " and gold >= " + str(num);
+		result = cur.execute(sql);
 		conn.commit();
 		cur.close();
 		conn.close();
-		return 1;
+		if result == 1:
+			return 1;
+		else:
+			return 0;
 	except MySQLdb.Error, e:
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
 		return "";
@@ -625,27 +635,67 @@ class MainHandler(tornado.web.RequestHandler):
 			sub = self.get_argument('sub');
 			r = valid_user(acc, pas) 
 			if r == 1:
-				msgid = self.get_argument('msg');
 				#check msg valid
 				#validmsg = check_msg(msgid)
 				validmsg = 1
 				if validmsg == 1:
 					if sub == "get":
+						msgid = self.get_argument('msg');
 						cmts = [];
 						get_all_comment(msgid, cmts);
 						for cmt in cmts:
 							self.write(cmt);
 					elif sub == "post":
+						msgid = self.get_argument('msg');
 						cmt = self.get_argument('contents');
+						receiver = self.get_argument('sendto', None);
+						if receiver:
+							sendtoid = get_user_id(receiver);
+						else:
+							sendtoid = 0;
 						uid = get_user_id(acc);
-						res = save_msg_comment(msgid, uid, cmt.encode('utf8'))
+						res = save_msg_comment(msgid, uid, sendtoid, cmt.encode('utf8'))
 						if res == 1:
 							self.write("post comment ok");
 						else:
 							self.write("post comment failed");
 					elif sub == "cmtnum":
+						msgid = self.get_argument('msg');
 						num = get_comment_num(msgid)
 						self.write(str(num));
+					elif sub == "getnew":
+						uid = get_user_id(acc);
+						timepoint = self.get_argument('lasttime');
+						cmts = [];
+						get_my_new_comment(uid, timepoint, cmts);
+						for cmt in cmts:
+							self.write(cmt);
+					elif sub == "getall":
+						uid = get_user_id(acc);
+						cup = self.get_argument('curpage', None)
+						pgs = self.get_argument('pagesize', None)
+						cmts = [];
+
+						if cup and pgs:
+							get_my_all_comment(uid, cup, pgs, cmts);
+						else:
+							get_my_all_comment(uid, 0, 1000, cmts);
+
+						for cmt in cmts:
+							self.write(cmt);
+					elif sub == "getallsent":
+						uid = get_user_id(acc);
+						cup = self.get_argument('curpage', None)
+						pgs = self.get_argument('pagesize', None)
+						cmts = [];
+
+						if cup and pgs:
+							get_my_all_sent_comment(uid, cup, pgs, cmts);
+						else:
+							get_my_all_sent_comment(uid, 0, 1000, cmts);
+
+						for cmt in cmts:
+							self.write(cmt);
 					else:
 						self.write("invalid sub operation");
 				else:
@@ -657,6 +707,70 @@ class MainHandler(tornado.web.RequestHandler):
 
                 else:
                 	self.write("invalid op type")
+
+def get_my_all_sent_comment(uid, currentpage, pagesize, comments):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select msgid, sender, cmt from msgcomment where sender=%u order by time desc limit %s, %s" % (uid, currentpage, pagesize)
+		print sqlstr
+
+		result = cur.execute(sqlstr);
+		for msgid, sender, cmt in cur.fetchall():
+			comments.append(cmt);
+		print comments;
+		conn.commit();
+		cur.close();
+		conn.close();
+		return 1;
+
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
+def get_my_all_comment(uid, currentpage, pagesize, comments):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select a.msgid as msgid, a.sender as sender, a.cmt as cmt from msgcomment a, message b where b.uid=%u and a.msgid=b.id order by a.time desc limit %s, %s" % (uid, currentpage, pagesize)
+		print sqlstr
+
+		result = cur.execute(sqlstr);
+		for msgid, sender, cmt in cur.fetchall():
+			comments.append(cmt);
+		print comments;
+		conn.commit();
+		cur.close();
+		conn.close();
+		return 1;
+
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
+def get_my_new_comment(uid, timepoint, comments):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select a.msgid as msgid, a.sender as sender, a.cmt as cmt from msgcomment a, message b where (b.uid=%u or a.receiver=%u) and a.msgid=b.id and a.time>from_unixtime(%s) order by a.time desc" % (uid, uid, timepoint)
+		print sqlstr
+
+		result = cur.execute(sqlstr);
+		for msgid, sender, cmt in cur.fetchall():
+			comments.append(cmt);
+		print comments;
+		conn.commit();
+		cur.close();
+		conn.close();
+		return 1;
+
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
 
 def get_all_comment(msgid, comments):
 	try:
@@ -679,13 +793,13 @@ def get_all_comment(msgid, comments):
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
 		return 0;
 
-def save_msg_comment(msgid, senderid, cmt):
+def save_msg_comment(msgid, senderid, receiverid, cmt):
 	try:
        		conn = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
         	cur=conn.cursor()
-        	value = [msgid, senderid,cmt]
-		result = cur.execute('insert into msgcomment(msgid, sender, cmt) values(%s,%s,%s)', value)
+        	value = [msgid, senderid,receiverid, cmt]
+		result = cur.execute('insert into msgcomment(msgid, sender, receiver,cmt) values(%s,%s,%s,%s)', value)
 		conn.commit();
 		cur.close();
 		conn.close();
