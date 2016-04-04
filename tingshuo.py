@@ -712,6 +712,14 @@ class MainHandler(tornado.web.RequestHandler):
 
 						for cmt in cmts:
 							self.write(cmt);
+					elif sub == "getall2":
+						uid = get_user_id(acc);
+						cup = self.get_argument('curpage', None)
+						pgs = self.get_argument('pagesize', None)
+						cmts = [];
+						get_my_all_comment_2(uid, cup, pgs, cmts);
+						for cmt in cmts:
+							self.write(cmt);
 					elif sub == "getallsent":
 						uid = get_user_id(acc);
 						cup = self.get_argument('curpage', None)
@@ -723,6 +731,14 @@ class MainHandler(tornado.web.RequestHandler):
 						else:
 							get_my_all_sent_comment(uid, 0, 1000, cmts);
 
+						for cmt in cmts:
+							self.write(cmt);
+					elif sub == "getallsent2":
+						uid = get_user_id(acc);
+						cup = self.get_argument('curpage', None)
+						pgs = self.get_argument('pagesize', None)
+						cmts = [];
+						get_my_all_sent_comment_2(uid, cup, pgs, cmts);
 						for cmt in cmts:
 							self.write(cmt);
 					else:
@@ -758,6 +774,31 @@ def get_my_all_sent_comment(uid, currentpage, pagesize, comments):
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
 		return 0;
 
+def get_my_all_sent_comment_2(uid, currentpage, pagesize, comments):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select msgid, sender, cmt from msgcomment where sender=%u order by time desc limit %s, %s" % (uid, currentpage, pagesize)
+		print sqlstr
+
+		result = cur.execute(sqlstr);
+		for msgid, sender, cmt in cur.fetchall():
+			one = {};
+			one["msgid"] = msgid;
+			one["cmt"]   = cmt;
+			jsonstr = json.dumps(one);
+			comments.append(one);
+		print comments;
+		conn.commit();
+		cur.close();
+		conn.close();
+		return 1;
+
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
 def get_my_all_comment(uid, currentpage, pagesize, comments):
 	try:
        		conn = getDBConn('''tingshuo''')
@@ -769,6 +810,29 @@ def get_my_all_comment(uid, currentpage, pagesize, comments):
 		result = cur.execute(sqlstr);
 		for msgid, sender, cmt in cur.fetchall():
 			comments.append(cmt);
+		print comments;
+		conn.commit();
+		cur.close();
+		conn.close();
+		return 1;
+
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+def get_my_all_comment_2(uid, currentpage, pagesize, comments):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select a.msgid as msgid, a.sender as sender, a.cmt as cmt from msgcomment a, message b where (b.uid=%u and a.msgid=b.id) or (b.uid!=%u and a.msgid=b.id and a.receiver=%u) order by a.time desc limit %s, %s" % (uid, uid, uid, currentpage, pagesize)
+		print sqlstr
+		result = cur.execute(sqlstr);
+		for msgid, sender, cmt in cur.fetchall():
+			one = {};
+			one["msgid"] = msgid;
+			one["cmt"]   = cmt;
+			jsonstr = json.dumps(one);
+			comments.append(jsonstr);
 		print comments;
 		conn.commit();
 		cur.close();
