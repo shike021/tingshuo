@@ -28,18 +28,6 @@ DB_NAME = "tingshuo";
 DB_USER = "shike";
 DB_PASSWD = "123456";
 
-def testjson():
-	result = {}
-	result["name"] = "shike";
-	result["nick"] = "xizhilang";
-	result["age"]  = "32";
-	print json.dumps(result);
-
-def testnotic():
-	notice = {}
-	notice["notice"] = "this is test notice";
-	print json.dumps(notice);
-
 def get_user_id(acc):
 	try:
 		conn = getDBConn('''tingshuo''')
@@ -156,6 +144,32 @@ def del_msg(uid, msgid):
 		cur = conn.cursor()
 		sql = "delete from message where id=" + str(msgid) + " and uid=" + str(uid);
 		cur.execute(sql);
+		conn.commit();
+		cur.close();
+		conn.close();
+		return 1;
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
+def get_msg(msgid, msgs):
+	try:
+		conn = getDBConn('''tingshuo''');
+		conn.select_db('tingshuo');
+		cur = conn.cursor();
+		sqlstr = "select id,unix_timestamp(createtime) as time, likecnt, uid, msg from message where id=%s " % (readmsgno )
+		print sqlstr
+		result = cur.execute(sqlstr);
+		for id, time, likecnt, uid, msg in cur.fetchall():
+			one = {};
+			one["id"]	= id;
+			one["msg"]	= msg;
+			one["t"]	= time;
+			one["uid"]	= uid;
+			one["like"]	= likecnt;
+			jsonstr = json.dumps(one);
+			msgs.append(jsonstr);
+		print msgs;
 		conn.commit();
 		cur.close();
 		conn.close();
@@ -566,6 +580,21 @@ class MainHandler(tornado.web.RequestHandler):
 			else:
 				self.write('invalid acc');
 
+		elif t=="getmsg":
+			acc = self.get_argument('acc');
+                	pas = self.get_argument('psw')
+			msgid = self.get_argument('msgid');
+			r = valid_user(acc, pas)
+			if r == 1:
+				uid = get_user_id(acc);
+				msgs = [];
+				ret = get_msg(msgid, msgs);
+				for msg in msgs:
+					#print msg;
+					self.write(msg);
+			else:
+				self.write('invalid acc');
+
 		elif t=="daylike":
 			acc = self.get_argument('acc');
                 	pas = self.get_argument('psw')
@@ -734,7 +763,7 @@ def get_my_all_comment(uid, currentpage, pagesize, comments):
        		conn = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
         	cur=conn.cursor()
-		sqlstr = "select a.msgid as msgid, a.sender as sender, a.cmt as cmt from msgcomment a, message b where b.uid=%u and a.msgid=b.id order by a.time desc limit %s, %s" % (uid, currentpage, pagesize)
+		sqlstr = "select a.msgid as msgid, a.sender as sender, a.cmt as cmt from msgcomment a, message b where (b.uid=%u and a.msgid=b.id) or (b.uid!=%u and a.msgid=b.id and a.receiver=%u) order by a.time desc limit %s, %s" % (uid, uid, uid, currentpage, pagesize)
 		print sqlstr
 
 		result = cur.execute(sqlstr);
