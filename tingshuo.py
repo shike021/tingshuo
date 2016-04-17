@@ -157,7 +157,7 @@ def get_msg(msgid, msgs):
 		conn = getDBConn('''tingshuo''');
 		conn.select_db('tingshuo');
 		cur = conn.cursor();
-		sqlstr = "select id,unix_timestamp(createtime) as time, likecnt, uid, msg from message where id=%s " % (readmsgno )
+		sqlstr = "select id,unix_timestamp(createtime) as time, likecnt, uid, msg from message where id=%s " % (msgid)
 		print sqlstr
 		result = cur.execute(sqlstr);
 		for id, time, likecnt, uid, msg in cur.fetchall():
@@ -824,7 +824,7 @@ def get_my_all_comment_2(uid, currentpage, pagesize, comments):
        		conn = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
         	cur=conn.cursor()
-		sqlstr = "select a.msgid as msgid, a.sender as sender, a.cmt as cmt from msgcomment a, message b where (b.uid=%u and a.msgid=b.id) or (b.uid!=%u and a.msgid=b.id and a.receiver=%u) order by a.time desc limit %s, %s" % (uid, uid, uid, currentpage, pagesize)
+		sqlstr = "select a.msgid as msgid, a.sender as sender, a.cmt as cmt from msgcomment a, message b where (b.uid=%u and a.msgid=b.id and a.sender!=%u) or (b.uid!=%u and a.msgid=b.id and a.receiver=%u and a.sender!=%u) order by a.time desc limit %s, %s" % (uid, uid, uid, uid, uid,currentpage, pagesize)
 		print sqlstr
 		result = cur.execute(sqlstr);
 		for msgid, sender, cmt in cur.fetchall():
