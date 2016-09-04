@@ -478,6 +478,22 @@ def get_msg_skill_list(msgid):
 	except MySQLdb.Error, e:
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
 		return 0;
+
+def save_use_skill_history(msgid, u, skilltype):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "insert into msgskilllist(msgid,skilltype,sender) values(%s,%s,%s)" % (msgid, skilltype, u);
+		conn.commit();
+		cur.close();
+		conn.close();
+		return 1;
+
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+	
 	
 def check_use_skill_gold(uid, skilltype, msgid):
 	try:
@@ -797,8 +813,8 @@ class MainHandler(tornado.web.RequestHandler):
 				if u == 0:
 					self.write("invalid user");
 				msgid= self.get_argument('msgid');
-				type = self.get_argument('skilltype');
-				check = check_use_skill_gold(u, type);
+				skilltype = self.get_argument('skilltype');
+				check = check_use_skill_gold(u, skilltype);
 				# 0 is success
 				if check == 0:
 					self.write("gold not enough");
@@ -807,11 +823,14 @@ class MainHandler(tornado.web.RequestHandler):
 				if check == 0:
 					self.write("msg not exist");
 
-				result = use_skill_to_msg(u,type, msgid);
+				result = use_skill_to_msg(u,skilltype, msgid);
 				if result == 1:
 					#decrease gold
-					dec_skill_gold(u, type);
+					dec_skill_gold(u, skilltype);
 					self.write("ok");
+
+					#save history record
+					save_use_skill_history(msgid, u, skilltype);
 				else:
 					self.write("unkown error");
 
