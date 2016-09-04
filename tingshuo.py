@@ -429,6 +429,130 @@ def get_net_pkg_list():
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
 		return 0;
 
+def get_all_skill():
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select type,name,consume,effect from skill";
+		print sqlstr
+		result = cur.execute(sqlstr);
+		list = [];
+		for type, name, consume, effect in cur.fetchall():
+			one = {};
+			one["type"]		= type;
+			one["name"]		= name;
+			one["consume"]		= consume;
+			one["effect"]		= effect;
+			list.append(one);
+		conn.commit();
+		cur.close();
+		conn.close();
+		return json.dumps(list);
+
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
+
+def get_msg_skill_list(msgid):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select usetime,sender,skilltype from ct_msgskilllist where msgid=%s order by usetime desc" % (msgid);
+		print sqlstr
+		result = cur.execute(sqlstr);
+		list = [];
+		for usetime,sender,skilltype in cur.fetchall():
+			one = {};
+			one["time"]	= usetime;
+			one["sender"]	= sender;
+			one["skilltype"]= skilltype;
+			list.append(one);
+		conn.commit();
+		cur.close();
+		conn.close();
+		return json.dumps(list);
+
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+	
+def check_use_skill_gold(uid, skilltype, msgid):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr1 = "select a.gold from member a, skill b where a.id=%s and b.type=%s and a.gold>b.consume" % (uid, skilltype);
+		print sqlstr1;
+		result = cur.execute(sqlstr1);
+		conn.commit();
+		cur.close();
+		conn.close();
+		return result; 
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
+def check_msg_exist(msgid):
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select id from message where id=%s" % (msgid);
+		print sqlstr;
+		result = cur.execute(sqlstr);
+		conn.commit();
+		cur.close();
+		conn.close();
+		return result; 
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
+def use_skill_to_msg(uid, skilltype, msgid):
+	sqlstr = "";
+	#add like
+	if skilltype==0:
+		sqlstr = "update message b,skill c set b.likecnt=b.likecnt+1 where b.id=%s and c.type=%s" % (msgid, skilltype);
+	#add gold
+	elif skilltype==1:
+		sqlstr = "update member a, message c set a.gold=a.gold+1 where a.id=c.uid and c.id=%s" % (msgid);
+	elif skilltype==2:
+		#not complete
+		sqlstr = "select 1;"
+	try:
+       		con  = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		print sqlstr;
+		result = cur.execute(sqlstr);
+		conn.commit();
+		cur.close();
+		eonn.close();
+		return result;
+
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
+def dec_skill_gold(uid,skilltype):
+	try:
+       		con  = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "update member a, skill b set a.gold=a.gold-b.consume where a.id=%s and b.type=%s" % (uid, skilltype);
+		print sqlstr;
+		result = cur.execute(sqlstr);
+		conn.commit();
+		cur.close();
+		eonn.close();
+		return result;
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
 	
 def getDBConn(dbname):
         conn=MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASSWD, port=3306,charset="utf8")
@@ -657,6 +781,56 @@ class MainHandler(tornado.web.RequestHandler):
 					self.write('dec pkg  err');
 			else:
 				self.write("op error");
+		
+		elif t=="getallskill":
+			skilllist = get_all_skill();
+			self.write(skilllist);
+
+		elif t=="useskill":
+                	acc = self.get_argument('acc')
+                	pas = self.get_argument('psw')
+			r = valid_user(acc, pas) 
+			if r != 1:
+				self.write("invalid user");
+			else:
+				u = get_user_id(acc);
+				if u == 0:
+					self.write("invalid user");
+				msgid= self.get_argument('msgid');
+				type = self.get_argument('skilltype');
+				check = check_use_skill_gold(u, type);
+				# 0 is success
+				if check == 0:
+					self.write("gold not enough");
+
+				check = check_msg_exist(msgid);	
+				if check == 0:
+					self.write("msg not exist");
+
+				result = use_skill_to_msg(u,type, msgid);
+				if result == 1:
+					#decrease gold
+					dec_skill_gold(u, type);
+					self.write("ok");
+				else:
+					self.write("unkown error");
+
+		elif t=="getmsgskill":
+                	acc = self.get_argument('acc')
+                	pas = self.get_argument('psw')
+			r = valid_user(acc, pas) 
+			if r != 1:
+				self.write("invalid user");
+			else:
+				u = get_user_id(acc);
+				if u == 0:
+					self.write("invalid user");
+				else:
+					msgid = self.get_argument('msgid');
+					msgskilllist = get_msg_skill_list(msgid);
+					self.write(msgskilllist); 
+					
+			
 
 		elif t=="comment":
                 	acc = self.get_argument('acc')
@@ -848,7 +1022,7 @@ def get_my_new_comment(uid, timepoint, comments):
        		conn = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
         	cur=conn.cursor()
-		sqlstr = "select a.msgid as msgid, a.sender as sender, a.cmt as cmt from msgcomment a, message b where (b.uid=%u or a.receiver=%u) and a.msgid=b.id and a.time>from_unixtime(%s) order by a.time desc" % (uid, uid, timepoint)
+		sqlstr = "select a.msgid as msgid, a.sender as sender, a.cmt as cmt from msgcomment a, message b where (b.uid=%u or a.receiver=%u) and a.sender !=%u and a.msgid=b.id and a.time>from_unixtime(%s) order by a.time desc" % (uid, uid, uid, timepoint)
 		print sqlstr
 
 		result = cur.execute(sqlstr);
