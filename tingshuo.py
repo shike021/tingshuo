@@ -405,30 +405,6 @@ def dec_net_pkg(net, pkgtype):
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
 		return 0;
 
-
-def get_net_pkg_list():
-	try:
-       		conn = getDBConn('''tingshuo''')
-		conn.select_db('tingshuo')
-        	cur=conn.cursor()
-		sqlstr = "select net,pkgtype,remainder from netflowpkg";
-		print sqlstr
-		result = cur.execute(sqlstr);
-		list = [];
-		for net, pkgtype, remainder in cur.fetchall():
-			one = {};
-			one["net"]		= net;
-			one["pkgtype"]		= pkgtype;
-			one["remainder"]	= remainder;
-			list.append(one);
-		conn.commit();
-		cur.close();
-		conn.close();
-		return json.dumps(list);
-	except MySQLdb.Error, e:
-		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
-		return 0;
-
 def get_all_skill():
 	try:
        		conn = getDBConn('''tingshuo''')
@@ -450,6 +426,29 @@ def get_all_skill():
 		conn.close();
 		return json.dumps(list);
 
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return 0;
+
+def get_net_pkg_list():
+	try:
+       		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+        	cur=conn.cursor()
+		sqlstr = "select net,pkgtype,remainder from netflowpkg";
+		print sqlstr
+		result = cur.execute(sqlstr);
+		list = [];
+		for net, pkgtype, remainder in cur.fetchall():
+			one = {};
+			one["net"]		= net;
+			one["pkgtype"]		= pkgtype;
+			one["remainder"]	= remainder;
+			list.append(one);
+		conn.commit();
+		cur.close();
+		conn.close();
+		return json.dumps(list);
 	except MySQLdb.Error, e:
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
 		return 0;
@@ -528,34 +527,36 @@ def check_msg_exist(msgid):
 		return 0;
 
 def use_skill_to_msg(uid, skilltype, msgid):
-	sqlstr = "";
+	print "222222222222222222222222222"
+	print skilltype;
+	sqlstr = "*****";
 	#add like
-	if skilltype==0:
+	if skilltype=="0":
 		sqlstr = "update message b,skill c set b.likecnt=b.likecnt+1 where b.id=%s and c.type=%s" % (msgid, skilltype);
 	#add gold
-	elif skilltype==1:
+	elif skilltype=="1":
 		sqlstr = "update member a, message c set a.gold=a.gold+1 where a.id=c.uid and c.id=%s" % (msgid);
-	elif skilltype==2:
+	elif skilltype=="2":
 		#not complete
 		sqlstr = "select 1;"
 	try:
-       		con  = getDBConn('''tingshuo''')
+		print "333333333333333333333333333"
+       		conn  = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
         	cur=conn.cursor()
 		print sqlstr;
 		result = cur.execute(sqlstr);
 		conn.commit();
 		cur.close();
-		eonn.close();
+		conn.close();
 		return result;
-
 	except MySQLdb.Error, e:
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
 		return 0;
 
 def dec_skill_gold(uid,skilltype):
 	try:
-       		con  = getDBConn('''tingshuo''')
+       		conn  = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
         	cur=conn.cursor()
 		sqlstr = "update member a, skill b set a.gold=a.gold-b.consume where a.id=%s and b.type=%s" % (uid, skilltype);
@@ -563,7 +564,7 @@ def dec_skill_gold(uid,skilltype):
 		result = cur.execute(sqlstr);
 		conn.commit();
 		cur.close();
-		eonn.close();
+		conn.close();
 		return result;
 	except MySQLdb.Error, e:
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
@@ -773,6 +774,7 @@ class MainHandler(tornado.web.RequestHandler):
 						self.write(msg);
 			else:
 				self.write('get post list err');
+
 		elif t=="netpkg":
 			print "get netpkg"
                 	acc = self.get_argument('acc')
@@ -803,6 +805,7 @@ class MainHandler(tornado.web.RequestHandler):
 			self.write(skilllist);
 
 		elif t=="useskill":
+			print "---------------------------";
                 	acc = self.get_argument('acc')
                 	pas = self.get_argument('psw')
 			r = valid_user(acc, pas) 
@@ -814,7 +817,7 @@ class MainHandler(tornado.web.RequestHandler):
 					self.write("invalid user");
 				msgid= self.get_argument('msgid');
 				skilltype = self.get_argument('skilltype');
-				check = check_use_skill_gold(u, skilltype);
+				check = check_use_skill_gold(u, skilltype, msgid);
 				# 0 is success
 				if check == 0:
 					self.write("gold not enough");
@@ -847,9 +850,8 @@ class MainHandler(tornado.web.RequestHandler):
 				else:
 					msgid = self.get_argument('msgid');
 					msgskilllist = get_msg_skill_list(msgid);
+					print msgskilllist;
 					self.write(msgskilllist); 
-					
-			
 
 		elif t=="comment":
                 	acc = self.get_argument('acc')
