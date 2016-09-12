@@ -217,6 +217,26 @@ def get_user_info(acc):
 	except MySQLdb.Error, e:
 		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
 		return "";
+
+def get_user_avatar(uin):
+	try:
+		conn = getDBConn('''tingshuo''')
+		conn.select_db('tingshuo')
+		cur = conn.cursor()
+		sql = "select avatar from member where userid=\"" + uin + "\"";
+		print sql;
+		print "\n";
+		result = cur.execute(sql);
+		avt = "";
+		for  avatar in cur.fetchall():
+			avt = avatar;
+		conn.commit();
+		cur.close();
+		conn.close();
+		return avt;
+	except MySQLdb.Error, e:
+		print "Mysql Error %d: %s" % (e.args[0], e.args[1])
+		return "";
 	
 
 def valid_user(acc, passwd):
@@ -852,6 +872,17 @@ class MainHandler(tornado.web.RequestHandler):
 					msgskilllist = get_msg_skill_list(msgid);
 					print msgskilllist;
 					self.write(msgskilllist); 
+
+		elif t=="getuseravatar":
+                	acc = self.get_argument('acc')
+                	pas = self.get_argument('psw')
+			r = valid_user(acc, pas) 
+			if r != 1:
+				self.write("invalid user");
+			else:
+				uin = self.get_argument('uin');
+				avatar = get_user_avatar(uin);
+				self.write(avatar);
 
 		elif t=="comment":
                 	acc = self.get_argument('acc')
