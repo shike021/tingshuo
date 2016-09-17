@@ -479,7 +479,7 @@ def get_msg_skill_list(msgid):
        		conn = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
         	cur=conn.cursor()
-		sqlstr = "select usetime,sender,skilltype from ct_msgskilllist where msgid=%s order by usetime desc" % (msgid);
+		sqlstr = "select usetime,sender,skilltype from msgskilllist where msgid=%s order by usetime desc" % (msgid);
 		print sqlstr
 		result = cur.execute(sqlstr);
 		list = [];
