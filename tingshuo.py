@@ -10,23 +10,37 @@ import threading
 import time
 import datetime
 import signal
+import string,os
 from time import ctime,sleep
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-#"""
-#config = ConfigParser.ConfigParser()
-#config.readfp(open(raw_input("input config file name:"), "rb"))
-#DB_HOST = config.get("global", "db_host")
-#DB_NAME = config.get("global", "db_name")
-#DB_USER = config.get("global", "db_user")
-#DB_PASSWD = config.get("global", "db_pass")
-#"""
 
-DB_HOST = "42.121.144.167";
-DB_NAME = "tingshuo";
-DB_USER = "shike";
-DB_PASSWD = "123456";
+def db_init():
+	cf = ConfigParser.ConfigParser()
+	cf.read("db.conf")
+
+	secs = cf.sections()
+	print 'sections:', secs
+
+	opts = cf.options("db")
+	print 'options:', opts
+	  
+	kvs = cf.items("db")
+	print 'db:', kvs
+
+	#read by type
+	global DB_HOST 
+	global DB_NAME 
+	global DB_USER 
+	global DB_PASSWD
+	DB_HOST = cf.get("db", "db_host")
+	DB_NAME = cf.get("db", "db_name")
+	DB_USER = cf.get("db", "db_user")
+	DB_PASSWD = cf.get("db", "db_pass")
+
+	print DB_HOST, DB_NAME, DB_USER, DB_PASSWD
+
 
 def get_user_id(acc):
 	try:
@@ -592,6 +606,9 @@ def dec_skill_gold(uid,skilltype):
 
 	
 def getDBConn(dbname):
+	print "teste----------------"
+	print  DB_HOST, DB_NAME, DB_USER, DB_PASSWD
+	print "teste----------------"
         conn=MySQLdb.connect(host=DB_HOST, user=DB_USER, passwd=DB_PASSWD, port=3306,charset="utf8")
         return conn
 
@@ -1196,10 +1213,12 @@ application = tornado.web.Application([
 def mainprocess():
 	print "thread mainprocess start..."
 	application.listen(80)
+	db_init();
 	tornado.ioloop.IOLoop.instance().start();
 
 def timetick():
 	print "thread timetick start..."
+	db_init();
 	sleep(5);
 	while (1) :
 		sleep(2);
@@ -1210,6 +1229,7 @@ def timetick():
 
 def main():
 	print 'tingshuo server starting at:', now();
+	db_init();
 	threadpool = []
 	t1 = threading.Thread(target=mainprocess);
 	threadpool.append(t1);
