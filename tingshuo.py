@@ -498,11 +498,13 @@ def get_msg_skill_list(msgid):
 		result = cur.execute(sqlstr);
 		list = [];
 		for usetime,sender,skilltype in cur.fetchall():
+			print usetime, sender, skilltype
 			one = {};
-			one["time"]	= usetime;
-			one["sender"]	= sender;
-			one["skilltype"]= skilltype;
+			one["time"]	= str(usetime);
+			one["sender"]	= str(sender);
+			one["skilltype"]= str(skilltype);
 			list.append(one);
+		print list
 		conn.commit();
 		cur.close();
 		conn.close();
@@ -513,11 +515,14 @@ def get_msg_skill_list(msgid):
 		return 0;
 
 def save_use_skill_history(msgid, u, skilltype):
+	print "-----------------------------------------------"
 	try:
        		conn = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
         	cur=conn.cursor()
 		sqlstr = "insert into msgskilllist(msgid,skilltype,sender) values(%s,%s,%s)" % (msgid, skilltype, u);
+		print sqlstr
+		result = cur.execute(sqlstr);
 		conn.commit();
 		cur.close();
 		conn.close();
@@ -864,6 +869,8 @@ class MainHandler(tornado.web.RequestHandler):
 					self.write("msg not exist");
 
 				result = use_skill_to_msg(u,skilltype, msgid);
+				print "++++++++++++++++"
+				print result
 				if result == 1:
 					#decrease gold
 					dec_skill_gold(u, skilltype);
