@@ -15,6 +15,14 @@ from time import ctime,sleep
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
+#define skill type
+SKILLTYPE = {
+	'addlike': 	0,
+	'addgold': 	1,
+	'addtime': 	2,
+	'addlikenormal':3,
+	'delgold': 	4
+}
 
 def db_init():
 	cf = ConfigParser.ConfigParser()
@@ -515,7 +523,6 @@ def get_msg_skill_list(msgid):
 		return 0;
 
 def save_use_skill_history(msgid, u, skilltype):
-	print "-----------------------------------------------"
 	try:
        		conn = getDBConn('''tingshuo''')
 		conn.select_db('tingshuo')
@@ -714,6 +721,8 @@ class MainHandler(tornado.web.RequestHandler):
 				sr = add_like(msgid);
 				if sr==1:
 					self.write("add like ok");
+					uid = get_user_id(acc)
+					save_use_skill_history(msgid, uid, SKILLTYPE['addlikenormal']);
 				else:
 					self.write("add like failed");
 			else:
@@ -869,7 +878,6 @@ class MainHandler(tornado.web.RequestHandler):
 					self.write("msg not exist");
 
 				result = use_skill_to_msg(u,skilltype, msgid);
-				print "++++++++++++++++"
 				print result
 				if result == 1:
 					#decrease gold
