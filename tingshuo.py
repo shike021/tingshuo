@@ -21,7 +21,8 @@ SKILLTYPE = {
 	'addgold': 	1,
 	'addtime': 	2,
 	'addlikenormal':3,
-	'delgold': 	4
+	'dellike': 	4,
+	'momoda':	5
 }
 
 def db_init():
@@ -585,6 +586,12 @@ def use_skill_to_msg(uid, skilltype, msgid):
 	elif skilltype=="2":
 		#not complete
 		sqlstr = "select 1;"
+	elif skilltype=="5":
+		#momoda . add 20 gold
+		sqlstr = "update member a, message c set a.gold=a.gold+20 where a.id=c.uid and c.id=%s" % (msgid);
+	else:
+		#do nothing
+		sqlstr = "select 1";
 	try:
 		print "333333333333333333333333333"
        		conn  = getDBConn('''tingshuo''')
