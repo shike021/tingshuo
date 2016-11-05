@@ -22,7 +22,16 @@ SKILLTYPE = {
 	'addtime': 	2,
 	'addlikenormal':3,
 	'dellike': 	4,
-	'momoda':	5
+	'momoda':	5,
+	'yun':		6,
+	'bukaixin':	7,
+	'youqianren':	8,
+	'weixiao':	9,
+	'lengmo':	10,
+	'doge':		11,
+	'guilian':	12,
+	'aixinyan':	13,
+	'guale':	14
 }
 
 def db_init():
@@ -589,6 +598,24 @@ def use_skill_to_msg(uid, skilltype, msgid):
 	elif skilltype=="5":
 		#momoda . add 20 gold
 		sqlstr = "update member a, message c set a.gold=a.gold+20 where a.id=c.uid and c.id=%s" % (msgid);
+	elif skilltype=="6":
+		sqlstr = "update member a, message c set a.gold=a.gold+20 where a.id=c.uid and c.id=%s" % (msgid);
+	elif skilltype=="7":
+		sqlstr = "update member a, message c set a.gold=a.gold+20 where a.id=c.uid and c.id=%s" % (msgid);
+	elif skilltype=="8":
+		sqlstr = "update member a, message c set a.gold=a.gold+20 where a.id=c.uid and c.id=%s" % (msgid);
+	elif skilltype=="9":
+		sqlstr = "update member a, message c set a.gold=a.gold+20 where a.id=c.uid and c.id=%s" % (msgid);
+	elif skilltype=="10":
+		sqlstr = "update member a, message c set a.gold=a.gold+20 where a.id=c.uid and c.id=%s" % (msgid);
+	elif skilltype=="11":
+		sqlstr = "update member a, message c set a.gold=a.gold+20 where a.id=c.uid and c.id=%s" % (msgid);
+	elif skilltype=="12":
+		sqlstr = "update member a, message c set a.gold=a.gold+20 where a.id=c.uid and c.id=%s" % (msgid);
+	elif skilltype=="13":
+		sqlstr = "update member a, message c set a.gold=a.gold+20 where a.id=c.uid and c.id=%s" % (msgid);
+	elif skilltype=="14":
+		sqlstr = "update member a, message c set a.gold=a.gold+20 where a.id=c.uid and c.id=%s" % (msgid);
 	else:
 		#do nothing
 		sqlstr = "select 1";
@@ -863,7 +890,6 @@ class MainHandler(tornado.web.RequestHandler):
 			self.write(skilllist);
 
 		elif t=="useskill":
-			print "---------------------------";
                 	acc = self.get_argument('acc')
                 	pas = self.get_argument('psw')
 			r = valid_user(acc, pas) 
